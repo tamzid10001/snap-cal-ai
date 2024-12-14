@@ -18,9 +18,11 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Starting meal analysis...');
     const { image_base64, userId } = await req.json();
     
     if (!image_base64) {
+      console.error('No image provided');
       throw new Error('No image provided');
     }
 
@@ -32,15 +34,14 @@ serve(async (req) => {
       messages: [
         {
           role: "system",
-          content: `You are a nutrition expert analyzing food photos. Your task is to:
-1. Identify the exact food items in the image with specific details
-2. Provide realistic nutritional estimates for the portion shown
-3. Return ONLY a JSON object with these fields:
-   - name: Detailed description of the food (string)
-   - calories: Total calories (number)
-   - protein: Protein in grams (number)
-   - carbs: Carbohydrates in grams (number)
-   - fats: Fat in grams (number)`
+          content: `You are a nutrition expert analyzing food photos. Respond ONLY with a JSON object containing these fields:
+{
+  "name": "detailed food description",
+  "calories": number (50-2000),
+  "protein": number (0-200),
+  "carbs": number (0-300),
+  "fats": number (0-150)
+}`
         },
         {
           role: "user",
@@ -53,7 +54,7 @@ serve(async (req) => {
             },
             {
               type: "text",
-              text: "Analyze this food and provide nutritional information in JSON format."
+              text: "What food is in this image? Provide nutritional information in JSON format only."
             }
           ]
         }
@@ -63,71 +64,71 @@ serve(async (req) => {
     });
 
     console.log('Received response from OpenAI');
+    console.log('Raw response:', response.choices[0]?.message?.content);
 
     if (!response.choices[0]?.message?.content) {
+      console.error('No response content from OpenAI');
       throw new Error('No response content from OpenAI');
     }
 
     const content = response.choices[0].message.content;
-    console.log('Raw OpenAI response:', content);
 
     try {
-      // Extract JSON from the response
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('No JSON found in response');
+      // First try to parse the entire response as JSON
+      let nutritionData = JSON.parse(content);
+      console.log('Successfully parsed JSON directly:', nutritionData);
+
+      // If that fails, try to extract JSON from the response
+      if (!nutritionData) {
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          console.error('No JSON found in response');
+          throw new Error('No JSON found in response');
+        }
+        nutritionData = JSON.parse(jsonMatch[0]);
+        console.log('Extracted and parsed JSON from response:', nutritionData);
       }
 
-      const nutritionData = JSON.parse(jsonMatch[0]);
-      console.log('Parsed nutrition data:', nutritionData);
-
-      // Ensure all required fields are present
+      // Validate all required fields are present and are numbers
       const requiredFields = ['name', 'calories', 'protein', 'carbs', 'fats'];
       for (const field of requiredFields) {
         if (!(field in nutritionData)) {
+          console.error(`Missing required field: ${field}`);
           throw new Error(`Missing required field: ${field}`);
+        }
+        if (field !== 'name') {
+          const value = parseFloat(nutritionData[field]);
+          if (isNaN(value)) {
+            console.error(`Invalid number for ${field}: ${nutritionData[field]}`);
+            throw new Error(`Invalid number for ${field}`);
+          }
+          nutritionData[field] = value;
         }
       }
 
       // Round numbers to 1 decimal place
       ['calories', 'protein', 'carbs', 'fats'].forEach(field => {
-        const value = parseFloat(nutritionData[field]);
-        if (isNaN(value)) {
-          throw new Error(`Invalid number for ${field}`);
-        }
-        nutritionData[field] = Math.round(value * 10) / 10;
+        nutritionData[field] = Math.round(nutritionData[field] * 10) / 10;
       });
 
-      // Validate ranges
-      if (nutritionData.calories < 50 || nutritionData.calories > 2000) {
-        throw new Error('Calories out of reasonable range (50-2000)');
-      }
-      if (nutritionData.protein < 0 || nutritionData.protein > 200) {
-        throw new Error('Protein out of reasonable range (0-200g)');
-      }
-      if (nutritionData.carbs < 0 || nutritionData.carbs > 300) {
-        throw new Error('Carbs out of reasonable range (0-300g)');
-      }
-      if (nutritionData.fats < 0 || nutritionData.fats > 150) {
-        throw new Error('Fats out of reasonable range (0-150g)');
-      }
-
-      console.log('Successfully processed nutrition data:', nutritionData);
-
+      console.log('Final processed nutrition data:', nutritionData);
       return new Response(JSON.stringify(nutritionData), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
 
-    } catch (e) {
-      console.error('Error processing nutrition data:', e);
-      throw new Error(`Failed to process nutrition data: ${e.message}`);
+    } catch (parseError) {
+      console.error('Error processing nutrition data:', parseError);
+      console.error('Raw content that failed to parse:', content);
+      throw new Error(`Failed to process nutrition data: ${parseError.message}`);
     }
 
   } catch (error) {
     console.error('Error in analyze-meal function:', error);
+    console.error('Full error object:', JSON.stringify(error, null, 2));
     return new Response(
       JSON.stringify({
-        error: error.message || 'An error occurred while analyzing the meal'
+        error: error.message || 'An error occurred while analyzing the meal',
+        details: error.toString()
       }),
       {
         status: 500,
