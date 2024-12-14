@@ -40,7 +40,7 @@ const LoginPage = () => {
       <div className="w-full max-w-md space-y-8 animate-fade-up">
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold tracking-tight text-black">Welcome to SnapCal AI</h1>
-          <p className="text-gray-600">Sign in to start your nutrition journey</p>
+          <p className="text-gray-600">Login to kickstart Diet!</p>
         </div>
 
         <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
