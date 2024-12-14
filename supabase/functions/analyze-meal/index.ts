@@ -4,7 +4,7 @@ import OpenAI from "https://esm.sh/openai@4.28.0"
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -18,16 +18,26 @@ serve(async (req) => {
     });
 
     const { image } = await req.json();
+    
+    if (!image) {
+      throw new Error('No image provided');
+    }
 
+    console.log('Analyzing image with OpenAI...');
+    
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
+          role: "system",
+          content: "You are a nutrition expert that analyzes food images and provides detailed nutritional information. Provide conservative estimates and round numbers."
+        },
+        {
           role: "user",
           content: [
-            { 
-              type: "text", 
-              text: "Analyze this food image and provide nutritional information in JSON format with these fields only: name (string), calories (number), protein (number), carbs (number), fats (number). Round numbers to nearest whole number. Be conservative with estimates." 
+            {
+              type: "text",
+              text: "Analyze this food image and provide nutritional information in JSON format with these fields only: name (string), calories (number), protein (number), carbs (number), fats (number). Round all numbers. Be conservative with estimates."
             },
             {
               type: "image_url",
@@ -36,7 +46,7 @@ serve(async (req) => {
           ],
         },
       ],
-      max_tokens: 300,
+      max_tokens: 500,
     });
 
     const content = response.choices[0].message.content;
@@ -45,23 +55,38 @@ serve(async (req) => {
     let nutritionData;
     try {
       nutritionData = JSON.parse(content);
-    } catch (e) {
-      // If the response isn't valid JSON, try to extract JSON-like content
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        nutritionData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('Failed to parse nutrition data');
+      
+      // Validate the response format
+      const requiredFields = ['name', 'calories', 'protein', 'carbs', 'fats'];
+      for (const field of requiredFields) {
+        if (!(field in nutritionData)) {
+          throw new Error(`Missing required field: ${field}`);
+        }
       }
+
+      // Ensure all numeric fields are numbers
+      nutritionData.calories = Math.round(Number(nutritionData.calories));
+      nutritionData.protein = Math.round(Number(nutritionData.protein));
+      nutritionData.carbs = Math.round(Number(nutritionData.carbs));
+      nutritionData.fats = Math.round(Number(nutritionData.fats));
+
+    } catch (e) {
+      console.error('Error parsing OpenAI response:', e);
+      throw new Error('Failed to parse nutrition data from AI response');
     }
 
-    return new Response(JSON.stringify(nutritionData), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  } catch (error) {
-    console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify(nutritionData),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error) {
+    console.error('Error in analyze-meal function:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: 'Failed to analyze meal',
+        details: error.message 
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
