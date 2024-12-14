@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { ImageUpload } from './ImageUpload';
 import { useNutrition } from '@/context/NutritionContext';
 import { useToast } from '@/hooks/use-toast';
+import { analyzeImage } from '@/utils/nutritionApi';
 
 export const MealEntry = () => {
   const { addMeal } = useNutrition();
@@ -14,23 +15,16 @@ export const MealEntry = () => {
   const handleImageAnalysis = async (file: File) => {
     setIsProcessing(true);
     try {
-      // Simulated AI analysis - in a real app, this would call your backend
-      const mockAnalysis = {
-        name: 'Analyzed Meal',
-        calories: Math.floor(Math.random() * 500) + 200,
-        protein: Math.floor(Math.random() * 30) + 10,
-        carbs: Math.floor(Math.random() * 50) + 20,
-        fats: Math.floor(Math.random() * 20) + 5,
-      };
-
+      const analysis = await analyzeImage(file);
+      
       addMeal({
-        ...mockAnalysis,
+        ...analysis,
         imageUrl: URL.createObjectURL(file),
       });
 
       toast({
         title: 'Meal logged successfully!',
-        description: `Estimated calories: ${mockAnalysis.calories}kcal`,
+        description: `Estimated calories: ${analysis.calories}kcal`,
       });
     } catch (error) {
       toast({
@@ -44,7 +38,6 @@ export const MealEntry = () => {
   };
 
   const handleManualEntry = () => {
-    // For demo purposes, add a mock meal
     addMeal({
       name: 'Manual Entry',
       calories: 350,
