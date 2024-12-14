@@ -76,6 +76,7 @@ const LoginPage = () => {
                 },
                 anchor: {
                   color: '#000000',
+                  textDecoration: 'none',
                 },
                 container: {
                   gap: '16px',
