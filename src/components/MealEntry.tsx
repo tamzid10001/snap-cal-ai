@@ -80,9 +80,11 @@ export const MealEntry = () => {
       protein: 20,
       carbs: 30,
       fats: 15,
+      image_url: null,
     };
 
     try {
+      setIsProcessing(true);
       const { data, error } = await supabase
         .from('meals')
         .insert([manualMeal])
@@ -91,7 +93,12 @@ export const MealEntry = () => {
 
       if (error) throw error;
 
-      addMeal(manualMeal);
+      // Add to local state with the correct structure
+      addMeal({
+        ...manualMeal,
+        id: data.id,
+        timestamp: new Date(),
+      });
 
       toast({
         title: 'Meal logged successfully!',
@@ -104,6 +111,8 @@ export const MealEntry = () => {
         description: 'Please try again',
         variant: 'destructive',
       });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -113,11 +122,12 @@ export const MealEntry = () => {
       <div className="space-y-6">
         <ImageUpload onUpload={handleImageAnalysis} isProcessing={isProcessing} />
         <div className="text-center">
-          <span className="text-sm text-gray-500">or</span>
+          <span className="text-sm text-muted-foreground">or</span>
         </div>
         <Button 
-          className="w-full bg-primary hover:bg-primary-hover text-white"
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
           onClick={handleManualEntry}
+          disabled={isProcessing}
         >
           <PlusCircle className="mr-2 h-4 w-4" />
           Enter Manually
