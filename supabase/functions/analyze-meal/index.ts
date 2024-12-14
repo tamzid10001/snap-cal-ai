@@ -23,21 +23,21 @@ serve(async (req) => {
       throw new Error('No image provided');
     }
 
-    console.log('Analyzing image with OpenAI...');
+    console.log('Starting image analysis with OpenAI...');
     
     const response = await openai.chat.completions.create({
-      model: "gpt-4-vision-preview",  // Updated to use the correct vision model
+      model: "gpt-4-vision-preview",
       messages: [
         {
           role: "system",
-          content: "You are a nutrition expert that analyzes food images and provides detailed nutritional information. Provide conservative estimates and round numbers."
+          content: "You are a precise nutrition expert that analyzes food images. Provide detailed nutritional information in JSON format. Be conservative with estimates and round numbers. Always include all required fields: name (string), calories (number), protein (number), carbs (number), fats (number). Ensure numbers are reasonable and within typical ranges for food portions."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: "Analyze this food image and provide nutritional information in JSON format with these fields only: name (string), calories (number), protein (number), carbs (number), fats (number). Round all numbers. Be conservative with estimates."
+              text: "Analyze this food image and provide nutritional information. Include name, calories, protein (g), carbs (g), and fats (g). Be conservative with estimates."
             },
             {
               type: "image_url",
@@ -47,32 +47,42 @@ serve(async (req) => {
         },
       ],
       max_tokens: 500,
+      temperature: 0.5, // Lower temperature for more consistent results
     });
 
-    const content = response.choices[0].message.content;
-    console.log('OpenAI response:', content);
+    console.log('Received OpenAI response:', response.choices[0].message.content);
 
     let nutritionData;
     try {
-      nutritionData = JSON.parse(content);
+      nutritionData = JSON.parse(response.choices[0].message.content);
       
       // Validate the response format
       const requiredFields = ['name', 'calories', 'protein', 'carbs', 'fats'];
-      for (const field of requiredFields) {
-        if (!(field in nutritionData)) {
-          throw new Error(`Missing required field: ${field}`);
-        }
+      const missingFields = requiredFields.filter(field => !(field in nutritionData));
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
       }
 
-      // Ensure all numeric fields are numbers
+      // Ensure all numeric fields are valid numbers and round them
       nutritionData.calories = Math.round(Number(nutritionData.calories));
-      nutritionData.protein = Math.round(Number(nutritionData.protein));
-      nutritionData.carbs = Math.round(Number(nutritionData.carbs));
-      nutritionData.fats = Math.round(Number(nutritionData.fats));
+      nutritionData.protein = Math.round(Number(nutritionData.protein) * 10) / 10;
+      nutritionData.carbs = Math.round(Number(nutritionData.carbs) * 10) / 10;
+      nutritionData.fats = Math.round(Number(nutritionData.fats) * 10) / 10;
+
+      // Validate ranges
+      if (nutritionData.calories < 0 || nutritionData.calories > 2000 ||
+          nutritionData.protein < 0 || nutritionData.protein > 100 ||
+          nutritionData.carbs < 0 || nutritionData.carbs > 200 ||
+          nutritionData.fats < 0 || nutritionData.fats > 100) {
+        throw new Error('Nutritional values out of reasonable range');
+      }
+
+      console.log('Processed nutrition data:', nutritionData);
 
     } catch (e) {
-      console.error('Error parsing OpenAI response:', e);
-      throw new Error('Failed to parse nutrition data from AI response');
+      console.error('Error processing OpenAI response:', e);
+      throw new Error('Failed to process nutrition data from AI response');
     }
 
     return new Response(
@@ -85,7 +95,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: 'Failed to analyze meal',
-        details: error.message 
+        details: error.message,
+        timestamp: new Date().toISOString()
       }),
       { 
         status: 500,
