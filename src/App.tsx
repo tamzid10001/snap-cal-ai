@@ -73,7 +73,7 @@ const LoginPage = () => {
                 label: 'auth-label',
                 input: 'auth-input',
               },
-              extend: {
+              customizations: {
                 headings: {
                   signin: 'Email Address & Password'
                 }
