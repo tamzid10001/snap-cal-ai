@@ -53,7 +53,11 @@ export const MealEntry = () => {
 
       // Update local state
       addMeal({
-        ...analysis,
+        name: analysis.name,
+        calories: analysis.calories,
+        protein: analysis.protein,
+        carbs: analysis.carbs,
+        fats: analysis.fats,
         imageUrl: publicUrl,
       });
 
@@ -95,9 +99,12 @@ export const MealEntry = () => {
 
       // Add to local state with the correct structure
       addMeal({
-        ...manualMeal,
-        id: data.id,
-        timestamp: new Date(),
+        name: manualMeal.name,
+        calories: manualMeal.calories,
+        protein: manualMeal.protein,
+        carbs: manualMeal.carbs,
+        fats: manualMeal.fats,
+        imageUrl: manualMeal.image_url,
       });
 
       toast({
