@@ -45,6 +45,57 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          activity_level: string | null
+          age: number | null
+          bmr: number | null
+          carbs_goal: number | null
+          created_at: string
+          daily_calories: number | null
+          fats_goal: number | null
+          gender: string | null
+          goal: string | null
+          height: number | null
+          id: string
+          protein_goal: number | null
+          setup_completed: boolean | null
+          weight: number | null
+        }
+        Insert: {
+          activity_level?: string | null
+          age?: number | null
+          bmr?: number | null
+          carbs_goal?: number | null
+          created_at?: string
+          daily_calories?: number | null
+          fats_goal?: number | null
+          gender?: string | null
+          goal?: string | null
+          height?: number | null
+          id: string
+          protein_goal?: number | null
+          setup_completed?: boolean | null
+          weight?: number | null
+        }
+        Update: {
+          activity_level?: string | null
+          age?: number | null
+          bmr?: number | null
+          carbs_goal?: number | null
+          created_at?: string
+          daily_calories?: number | null
+          fats_goal?: number | null
+          gender?: string | null
+          goal?: string | null
+          height?: number | null
+          id?: string
+          protein_goal?: number | null
+          setup_completed?: boolean | null
+          weight?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

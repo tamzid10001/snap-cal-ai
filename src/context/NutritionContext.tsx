@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Meal, NutritionGoals } from '@/types/meal';
+import { supabase } from '@/integrations/supabase/client';
 
 interface NutritionContextType {
   meals: Meal[];
@@ -35,6 +36,30 @@ export const NutritionProvider = ({ children }: { children: React.ReactNode }) =
   });
 
   useEffect(() => {
+    const fetchUserGoals = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('daily_calories, protein_goal, carbs_goal, fats_goal')
+          .eq('id', user.id)
+          .single();
+
+        if (data) {
+          setGoals({
+            calories: data.daily_calories,
+            protein: data.protein_goal,
+            carbs: data.carbs_goal,
+            fats: data.fats_goal,
+          });
+        }
+      }
+    };
+
+    fetchUserGoals();
+  }, []);
+
+  useEffect(() => {
     // Calculate daily progress whenever meals change
     const progress = meals.reduce(
       (acc, meal) => ({
@@ -61,8 +86,23 @@ export const NutritionProvider = ({ children }: { children: React.ReactNode }) =
     setMeals((prev) => prev.filter((meal) => meal.id !== id));
   };
 
-  const updateGoals = (newGoals: NutritionGoals) => {
-    setGoals(newGoals);
+  const updateGoals = async (newGoals: NutritionGoals) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          daily_calories: newGoals.calories,
+          protein_goal: newGoals.protein,
+          carbs_goal: newGoals.carbs,
+          fats_goal: newGoals.fats,
+        })
+        .eq('id', user.id);
+
+      if (!error) {
+        setGoals(newGoals);
+      }
+    }
   };
 
   return (
