@@ -29,7 +29,7 @@ serve(async (req) => {
     console.log('Sending request to OpenAI...');
     
     const response = await openai.chat.completions.create({
-      model: "gpt-4-vision-preview",  // Using the correct model name
+      model: "gpt-4o",  // Using the recommended model with vision capabilities
       messages: [
         {
           role: "system",
