@@ -14,16 +14,16 @@ export const DashboardCard = ({ title, value, max, unit = '', className = '' }: 
   const progress = (Number(value) / max) * 100;
 
   return (
-    <Card className={`p-6 animate-fade-up bg-card hover:bg-accent/5 transition-colors ${className}`}>
-      <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
-      <p className="text-2xl font-semibold mt-2 text-primary">
+    <Card className={`p-6 animate-fade-up bg-white border border-gray-200 hover:border-gray-300 transition-colors shadow-sm ${className}`}>
+      <h3 className="text-sm font-medium text-gray-600">{title}</h3>
+      <p className="text-2xl font-semibold mt-2 text-black">
         {value}
         {unit}
       </p>
       <div className="mt-4">
-        <Progress value={progress} className="h-2" />
+        <Progress value={progress} className="h-2 bg-gray-100" />
       </div>
-      <p className="text-sm text-muted-foreground mt-2">
+      <p className="text-sm text-gray-500 mt-2">
         of {max}
         {unit} goal
       </p>
