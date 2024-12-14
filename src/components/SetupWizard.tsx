@@ -5,18 +5,31 @@ import { SetupForm } from "./setup/SetupForm";
 import { calculateBMR } from "./setup/utils";
 import type { SetupFormValues } from "./setup/types";
 import { Camera } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export const SetupWizard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) {
+        console.error('Auth error:', error);
+        navigate('/login');
+        return;
+      }
+      setUser(user);
+    };
+    
+    checkUser();
+  }, [navigate]);
   
   const onSubmit = async (values: SetupFormValues) => {
     try {
-      // Get user ID first
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !user) {
-        throw new Error('Failed to get user information');
+      if (!user) {
+        throw new Error('No authenticated user found');
       }
 
       // Get the final height in centimeters
@@ -26,15 +39,15 @@ export const SetupWizard = () => {
 
       const goals = calculateBMR({
         ...values,
-        height: heightInCm // Use the converted height for BMR calculation
+        height: heightInCm
       });
 
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({
           age: values.age,
           weight: values.weight,
-          height: heightInCm, // Save the height in centimeters
+          height: heightInCm,
           gender: values.gender,
           activity_level: values.activityLevel,
           goal: values.goal,
@@ -43,9 +56,9 @@ export const SetupWizard = () => {
         })
         .eq('id', user.id);
 
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
+      if (updateError) {
+        console.error('Supabase update error:', updateError);
+        throw updateError;
       }
 
       toast({
@@ -63,6 +76,12 @@ export const SetupWizard = () => {
       });
     }
   };
+
+  if (!user) {
+    return <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="text-center">Checking authentication...</div>
+    </div>;
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
