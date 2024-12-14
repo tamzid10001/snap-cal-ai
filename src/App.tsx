@@ -72,10 +72,12 @@ const LoginPage = () => {
                 button: 'auth-button',
                 label: 'auth-label',
                 input: 'auth-input',
-              },
-              customizations: {
-                headings: {
-                  signin: 'Email Address & Password'
+              }
+            }}
+            localization={{
+              variables: {
+                sign_in: {
+                  email_label: 'Email Address & Password'
                 }
               }
             }}
