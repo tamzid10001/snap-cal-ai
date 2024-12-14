@@ -1,15 +1,15 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import OpenAI from "https://esm.sh/openai@4.28.0"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import OpenAI from "https://esm.sh/openai@4.20.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
@@ -18,7 +18,7 @@ serve(async (req) => {
     });
 
     const { image } = await req.json();
-    
+
     if (!image) {
       throw new Error('No image provided');
     }
@@ -30,33 +30,41 @@ serve(async (req) => {
       messages: [
         {
           role: "system",
-          content: "You are a precise nutrition expert that analyzes food images. Provide detailed nutritional information in JSON format. Be conservative with estimates and round numbers. Always include all required fields: name (string), calories (number), protein (number), carbs (number), fats (number). Ensure numbers are reasonable and within typical ranges for food portions."
+          content: `You are a nutrition expert analyzing food images. Your task is to:
+1. Identify the food items in the image
+2. Provide nutritional estimates for a single serving
+3. Return ONLY a JSON object with these exact fields:
+   - name: Brief description of the food
+   - calories: Total calories (number between 50-1000)
+   - protein: Grams of protein (number between 0-100)
+   - carbs: Grams of carbohydrates (number between 0-200)
+   - fats: Grams of fat (number between 0-100)
+Round all numbers to one decimal place. Be conservative with estimates.`
         },
         {
           role: "user",
           content: [
-            {
-              type: "text",
-              text: "Analyze this food image and provide nutritional information. Include name, calories, protein (g), carbs (g), and fats (g). Be conservative with estimates."
-            },
-            {
-              type: "image_url",
-              image_url: image,
-            },
-          ],
-        },
+            { type: "text", text: "What food is in this image? Provide nutritional information in JSON format." },
+            { type: "image_url", url: image }
+          ]
+        }
       ],
       max_tokens: 500,
-      temperature: 0.5, // Lower temperature for more consistent results
+      temperature: 0.3, // Lower temperature for more consistent results
     });
 
-    console.log('Received OpenAI response:', response.choices[0].message.content);
+    console.log('Raw OpenAI response:', response.choices[0].message.content);
 
     let nutritionData;
     try {
-      nutritionData = JSON.parse(response.choices[0].message.content);
+      const content = response.choices[0].message.content.trim();
+      // Try to extract JSON if it's wrapped in text
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      const jsonString = jsonMatch ? jsonMatch[0] : content;
       
-      // Validate the response format
+      nutritionData = JSON.parse(jsonString);
+      
+      // Validate required fields
       const requiredFields = ['name', 'calories', 'protein', 'carbs', 'fats'];
       const missingFields = requiredFields.filter(field => !(field in nutritionData));
       
@@ -64,30 +72,43 @@ serve(async (req) => {
         throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
       }
 
-      // Ensure all numeric fields are valid numbers and round them
-      nutritionData.calories = Math.round(Number(nutritionData.calories));
-      nutritionData.protein = Math.round(Number(nutritionData.protein) * 10) / 10;
-      nutritionData.carbs = Math.round(Number(nutritionData.carbs) * 10) / 10;
-      nutritionData.fats = Math.round(Number(nutritionData.fats) * 10) / 10;
+      // Convert and validate numeric fields
+      const numericFields = ['calories', 'protein', 'carbs', 'fats'];
+      numericFields.forEach(field => {
+        const value = Number(nutritionData[field]);
+        if (isNaN(value)) {
+          throw new Error(`Invalid numeric value for ${field}`);
+        }
+        nutritionData[field] = Math.round(value * 10) / 10;
+      });
 
       // Validate ranges
-      if (nutritionData.calories < 0 || nutritionData.calories > 2000 ||
-          nutritionData.protein < 0 || nutritionData.protein > 100 ||
-          nutritionData.carbs < 0 || nutritionData.carbs > 200 ||
-          nutritionData.fats < 0 || nutritionData.fats > 100) {
-        throw new Error('Nutritional values out of reasonable range');
+      if (nutritionData.calories < 50 || nutritionData.calories > 1000) {
+        throw new Error('Calories out of reasonable range (50-1000)');
+      }
+      if (nutritionData.protein < 0 || nutritionData.protein > 100) {
+        throw new Error('Protein out of reasonable range (0-100g)');
+      }
+      if (nutritionData.carbs < 0 || nutritionData.carbs > 200) {
+        throw new Error('Carbs out of reasonable range (0-200g)');
+      }
+      if (nutritionData.fats < 0 || nutritionData.fats > 100) {
+        throw new Error('Fats out of reasonable range (0-100g)');
       }
 
       console.log('Processed nutrition data:', nutritionData);
 
     } catch (e) {
-      console.error('Error processing OpenAI response:', e);
-      throw new Error('Failed to process nutrition data from AI response');
+      console.error('Error processing nutrition data:', e);
+      throw new Error(`Failed to process nutrition data: ${e.message}`);
     }
 
     return new Response(
       JSON.stringify(nutritionData),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      }
     );
 
   } catch (error) {
@@ -99,8 +120,8 @@ serve(async (req) => {
         timestamp: new Date().toISOString()
       }),
       { 
-        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
       }
     );
   }
