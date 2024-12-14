@@ -12,13 +12,22 @@ export const SetupWizard = () => {
   
   const onSubmit = async (values: SetupFormValues) => {
     try {
-      const goals = calculateBMR(values);
+      // Get the final height in centimeters
+      const heightInCm = values.heightUnit === 'ft' && values.heightFeet && values.heightInches 
+        ? Math.round((values.heightFeet * 30.48) + (values.heightInches * 2.54))
+        : values.height;
+
+      const goals = calculateBMR({
+        ...values,
+        height: heightInCm // Use the converted height for BMR calculation
+      });
+
       const { error } = await supabase
         .from('profiles')
         .update({
-          age: Number(values.age),
-          weight: Number(values.weight),
-          height: Number(values.height),
+          age: values.age,
+          weight: values.weight,
+          height: heightInCm, // Save the height in centimeters
           gender: values.gender,
           activity_level: values.activityLevel,
           goal: values.goal,
@@ -27,7 +36,10 @@ export const SetupWizard = () => {
         })
         .eq('id', (await supabase.auth.getUser()).data.user?.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
       toast({
         title: "Setup completed!",
@@ -36,6 +48,7 @@ export const SetupWizard = () => {
       
       navigate('/');
     } catch (error) {
+      console.error('Setup error:', error);
       toast({
         title: "Error",
         description: "Failed to save your preferences. Please try again.",
