@@ -95,14 +95,17 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [setupCompleted, setSetupCompleted] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       if (session) {
         checkSetup(session.user.id);
       } else {
         setLoading(false);
       }
-    });
+    };
+
+    checkSession();
 
     const {
       data: { subscription },
@@ -120,16 +123,22 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   const checkSetup = async (userId: string) => {
     try {
-      const { data: profiles } = await supabase
+      const { data: profiles, error } = await supabase
         .from('profiles')
         .select('setup_completed')
         .eq('id', userId)
         .single();
       
+      if (error) {
+        console.error('Profile check error:', error);
+        setLoading(false);
+        return;
+      }
+      
       setSetupCompleted(!!profiles?.setup_completed);
+      setLoading(false);
     } catch (error) {
       console.error('Profile check error:', error);
-    } finally {
       setLoading(false);
     }
   };
