@@ -29,12 +29,12 @@ serve(async (req) => {
     console.log('Sending request to OpenAI...');
     
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",  // Using the recommended model with vision capabilities
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
           content: `You are a nutrition expert analyzing food photos. Your task is to:
-1. Identify the exact food items in the image with specific details (e.g., "Grilled chicken breast with steamed broccoli" instead of just "Chicken and vegetables")
+1. Identify the exact food items in the image with specific details
 2. Provide realistic nutritional estimates for the portion shown
 3. Return ONLY a JSON object with these fields:
    - name: Detailed description of the food (string)
@@ -92,20 +92,6 @@ IMPORTANT: Return ONLY the JSON object, no additional text.`
         }
         nutritionData[field] = Math.round(value * 10) / 10;
       });
-
-      // Validate ranges
-      if (nutritionData.calories < 50 || nutritionData.calories > 1000) {
-        throw new Error('Calories out of reasonable range (50-1000)');
-      }
-      if (nutritionData.protein < 0 || nutritionData.protein > 100) {
-        throw new Error('Protein out of reasonable range (0-100g)');
-      }
-      if (nutritionData.carbs < 0 || nutritionData.carbs > 200) {
-        throw new Error('Carbs out of reasonable range (0-200g)');
-      }
-      if (nutritionData.fats < 0 || nutritionData.fats > 100) {
-        throw new Error('Fats out of reasonable range (0-100g)');
-      }
 
       console.log('Successfully processed nutrition data:', nutritionData);
 
