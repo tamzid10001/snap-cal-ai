@@ -37,7 +37,7 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8 animate-fade-up">
+      <div className="w-full max-w-md space-y-8">
         <div className="text-center space-y-2">
           <h1 className="text-2xl font-bold tracking-tight text-black">Welcome to SnapCal AI</h1>
           <p className="text-gray-600">Login to kickstart Diet!</p>
@@ -67,12 +67,6 @@ const LoginPage = () => {
                   gap: '16px',
                 },
               },
-              className: {
-                container: 'auth-container',
-                button: 'auth-button',
-                label: 'auth-label',
-                input: 'auth-input',
-              }
             }}
             localization={{
               variables: {
@@ -164,19 +158,21 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <NutritionProvider>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            } />
-            <Route path="/setup" element={<SetupWizard />} />
-          </Routes>
-        </BrowserRouter>
+        <div className="min-h-screen bg-background">
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <Index />
+                </ProtectedRoute>
+              } />
+              <Route path="/setup" element={<SetupWizard />} />
+            </Routes>
+          </BrowserRouter>
+        </div>
       </TooltipProvider>
     </NutritionProvider>
   </QueryClientProvider>
