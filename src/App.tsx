@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import { SetupWizard } from "./components/SetupWizard";
+import { LoginForm } from "./components/auth/LoginForm";
 
 const queryClient = new QueryClient();
 
@@ -18,20 +19,37 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setIsAuthenticated(!!user);
-
-      if (user) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('setup_completed')
-          .eq('id', user.id)
-          .single();
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
         
-        setSetupCompleted(!!data?.setup_completed);
+        if (error) {
+          console.error('Auth error:', error);
+          setIsAuthenticated(false);
+          setLoading(false);
+          return;
+        }
+
+        setIsAuthenticated(!!user);
+
+        if (user) {
+          const { data, error: profileError } = await supabase
+            .from('profiles')
+            .select('setup_completed')
+            .eq('id', user.id)
+            .single();
+          
+          if (profileError) {
+            console.error('Profile error:', profileError);
+          }
+          
+          setSetupCompleted(!!data?.setup_completed);
+        }
+      } catch (error) {
+        console.error('Check auth error:', error);
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
 
     checkAuth();
@@ -79,6 +97,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            <Route path="/login" element={<LoginForm />} />
             <Route path="/" element={
               <ProtectedRoute>
                 <Index />
