@@ -8,7 +8,6 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import { SetupWizard } from "./components/SetupWizard";
-import { LoginForm } from "./components/auth/LoginForm";
 
 const queryClient = new QueryClient();
 
@@ -58,7 +57,6 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/login" element={<LoginForm />} />
             <Route path="/" element={
               <ProtectedRoute>
                 <Index />
