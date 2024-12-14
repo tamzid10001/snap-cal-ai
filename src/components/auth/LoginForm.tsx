@@ -1,11 +1,42 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Camera } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/components/ui/use-toast';
 
 export const LoginForm = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (user && !error) {
+        navigate('/');
+      }
+    };
+
+    checkUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session);
+      if (event === 'SIGNED_IN') {
+        toast({
+          title: "Welcome back!",
+          description: "Successfully signed in.",
+        });
+        navigate('/');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate, toast]);
+
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8 animate-fade-up">
@@ -21,7 +52,7 @@ export const LoginForm = () => {
           </p>
         </div>
 
-        <Card className="p-6 border-border/40 shadow-lg">
+        <Card className="p-6 border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <Auth
             supabaseClient={supabase}
             appearance={{
@@ -29,10 +60,19 @@ export const LoginForm = () => {
               extend: false,
               className: {
                 container: 'w-full',
-                button: 'w-full bg-primary hover:bg-primary/90 text-white rounded-md px-4 py-2',
+                button: 'w-full bg-primary hover:bg-primary-hover text-white rounded-md px-4 py-2',
                 input: 'w-full rounded-md border border-border bg-background px-4 py-2',
                 label: 'text-sm font-medium text-foreground',
                 message: 'text-sm text-destructive mt-2',
+                anchor: 'text-primary hover:text-primary-hover',
+              },
+              variables: {
+                default: {
+                  colors: {
+                    brand: '#86A789',
+                    brandAccent: '#739276',
+                  },
+                },
               },
             }}
             theme="dark"
