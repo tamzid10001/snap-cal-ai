@@ -12,6 +12,13 @@ export const SetupWizard = () => {
   
   const onSubmit = async (values: SetupFormValues) => {
     try {
+      // Get user ID first
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        throw new Error('Failed to get user information');
+      }
+
       // Get the final height in centimeters
       const heightInCm = values.heightUnit === 'ft' && values.heightFeet && values.heightInches 
         ? Math.round((values.heightFeet * 30.48) + (values.heightInches * 2.54))
@@ -34,7 +41,7 @@ export const SetupWizard = () => {
           ...goals,
           setup_completed: true,
         })
-        .eq('id', (await supabase.auth.getUser()).data.user?.id);
+        .eq('id', user.id);
 
       if (error) {
         console.error('Supabase error:', error);
