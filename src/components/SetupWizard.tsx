@@ -83,7 +83,12 @@ export const SetupWizard = () => {
       const { error } = await supabase
         .from('profiles')
         .update({
-          ...values,
+          age: Number(values.age),
+          weight: Number(values.weight),
+          height: Number(values.height),
+          gender: values.gender,
+          activity_level: values.activityLevel,
+          goal: values.goal,
           ...goals,
           setup_completed: true,
         })
