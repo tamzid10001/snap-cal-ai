@@ -56,11 +56,11 @@ export const SetupWizard = () => {
           gender: values.gender,
           activity_level: values.activityLevel,
           goal: values.goal,
-          bmr: goals.bmr,
-          daily_calories: goals.dailyCalories,
-          protein_goal: goals.proteinGoal,
-          carbs_goal: goals.carbsGoal,
-          fats_goal: goals.fatsGoal,
+          bmr: Math.round(goals.bmr),
+          daily_calories: Math.round(goals.dailyCalories),
+          protein_goal: Math.round(goals.proteinGoal),
+          carbs_goal: Math.round(goals.carbsGoal),
+          fats_goal: Math.round(goals.fatsGoal),
           setup_completed: true,
         })
         .eq('id', user.id)

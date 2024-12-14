@@ -15,7 +15,7 @@ export const calculateBMR = (values: SetupFormValues) => {
     extra: 1.9, // Very heavy exercise, physical job
   };
   
-  const dailyCalories = Math.round(bmr * activityMultipliers[values.activityLevel]);
+  const dailyCalories = bmr * activityMultipliers[values.activityLevel];
   
   // Adjust calories based on goal
   const goalAdjustments = {
@@ -27,12 +27,12 @@ export const calculateBMR = (values: SetupFormValues) => {
   const adjustedCalories = dailyCalories + goalAdjustments[values.goal];
   
   // Calculate macros (40/30/30 split by default)
-  const proteinGrams = Math.round((adjustedCalories * 0.3) / 4); // 4 calories per gram
-  const carbsGrams = Math.round((adjustedCalories * 0.4) / 4);
-  const fatsGrams = Math.round((adjustedCalories * 0.3) / 9); // 9 calories per gram
+  const proteinGrams = (adjustedCalories * 0.3) / 4; // 4 calories per gram
+  const carbsGrams = (adjustedCalories * 0.4) / 4;
+  const fatsGrams = (adjustedCalories * 0.3) / 9; // 9 calories per gram
   
   return {
-    bmr: Math.round(bmr),
+    bmr,
     dailyCalories: adjustedCalories,
     proteinGoal: proteinGrams,
     carbsGoal: carbsGrams,

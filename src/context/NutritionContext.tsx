@@ -37,22 +37,32 @@ export const NutritionProvider = ({ children }: { children: React.ReactNode }) =
 
   useEffect(() => {
     const fetchUserGoals = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('daily_calories, protein_goal, carbs_goal, fats_goal')
-          .eq('id', user.id)
-          .single();
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('daily_calories, protein_goal, carbs_goal, fats_goal')
+            .eq('id', user.id)
+            .single();
 
-        if (data) {
-          setGoals({
-            calories: data.daily_calories,
-            protein: data.protein_goal,
-            carbs: data.carbs_goal,
-            fats: data.fats_goal,
-          });
+          if (error) {
+            console.error('Error fetching goals:', error);
+            return;
+          }
+
+          if (data) {
+            console.log('Fetched user goals:', data);
+            setGoals({
+              calories: Math.round(data.daily_calories) || defaultGoals.calories,
+              protein: Math.round(data.protein_goal) || defaultGoals.protein,
+              carbs: Math.round(data.carbs_goal) || defaultGoals.carbs,
+              fats: Math.round(data.fats_goal) || defaultGoals.fats,
+            });
+          }
         }
+      } catch (error) {
+        console.error('Error in fetchUserGoals:', error);
       }
     };
 
@@ -87,21 +97,28 @@ export const NutritionProvider = ({ children }: { children: React.ReactNode }) =
   };
 
   const updateGoals = async (newGoals: NutritionGoals) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          daily_calories: newGoals.calories,
-          protein_goal: newGoals.protein,
-          carbs_goal: newGoals.carbs,
-          fats_goal: newGoals.fats,
-        })
-        .eq('id', user.id);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            daily_calories: Math.round(newGoals.calories),
+            protein_goal: Math.round(newGoals.protein),
+            carbs_goal: Math.round(newGoals.carbs),
+            fats_goal: Math.round(newGoals.fats),
+          })
+          .eq('id', user.id);
 
-      if (!error) {
+        if (error) {
+          console.error('Error updating goals:', error);
+          return;
+        }
+
         setGoals(newGoals);
       }
+    } catch (error) {
+      console.error('Error in updateGoals:', error);
     }
   };
 
