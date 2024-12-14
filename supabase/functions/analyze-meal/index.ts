@@ -26,7 +26,7 @@ serve(async (req) => {
     console.log('Analyzing image with OpenAI...');
     
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4-vision-preview",  // Updated to use the correct vision model
       messages: [
         {
           role: "system",
