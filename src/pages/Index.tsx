@@ -2,8 +2,11 @@ import React from 'react';
 import { Header } from '@/components/Header';
 import { DashboardCard } from '@/components/DashboardCard';
 import { MealEntry } from '@/components/MealEntry';
+import { useNutrition } from '@/context/NutritionContext';
 
 const Index = () => {
+  const { dailyProgress, goals } = useNutrition();
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -11,18 +14,21 @@ const Index = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <DashboardCard
             title="Daily Calories"
-            value="1,200"
-            subtitle="of 2,000 goal"
+            value={dailyProgress.calories}
+            max={goals.calories}
+            unit="kcal"
           />
           <DashboardCard
             title="Protein"
-            value="65g"
-            subtitle="of 120g goal"
+            value={dailyProgress.protein}
+            max={goals.protein}
+            unit="g"
           />
           <DashboardCard
-            title="Meals Today"
-            value="2"
-            subtitle="of 3 planned"
+            title="Carbs"
+            value={dailyProgress.carbs}
+            max={goals.carbs}
+            unit="g"
           />
         </div>
         
