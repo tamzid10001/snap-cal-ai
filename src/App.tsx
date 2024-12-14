@@ -56,6 +56,15 @@ const LoginPage = () => {
                   },
                 },
               },
+              dictionary: {
+                providers: {
+                  email: {
+                    confirmation: {
+                      email_sent: "Check your email for the Confirmation Link!"
+                    }
+                  }
+                }
+              }
             }}
             providers={[]}
           />
