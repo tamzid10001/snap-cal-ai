@@ -6,8 +6,6 @@ import { Card } from '@/components/ui/card';
 import { Camera } from 'lucide-react';
 
 export const LoginForm = () => {
-  const [view, setView] = useState<'sign_in' | 'sign_up'>('sign_in');
-
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8 animate-fade-up">
@@ -26,7 +24,6 @@ export const LoginForm = () => {
         <Card className="p-6 border-border/40 shadow-lg">
           <Auth
             supabaseClient={supabase}
-            view={view}
             appearance={{
               theme: ThemeSupa,
               extend: false,
@@ -40,7 +37,6 @@ export const LoginForm = () => {
             }}
             theme="dark"
             providers={['google']}
-            onViewChange={(newView) => setView(newView as 'sign_in' | 'sign_up')}
           />
         </Card>
 
