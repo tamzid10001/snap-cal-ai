@@ -21,7 +21,7 @@ serve(async (req) => {
     const { image } = await req.json();
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "user",
