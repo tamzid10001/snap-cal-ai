@@ -1,5 +1,5 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import OpenAI from "https://esm.sh/openai@4.20.1";
 
 const corsHeaders = {
@@ -8,22 +8,25 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('Starting meal analysis...');
+    
     const openai = new OpenAI({
       apiKey: Deno.env.get('OPENAI_API_KEY'),
     });
 
     const { image } = await req.json();
-
+    
     if (!image) {
       throw new Error('No image provided');
     }
 
-    console.log('Starting image analysis with OpenAI...');
+    console.log('Sending request to OpenAI...');
     
     const response = await openai.chat.completions.create({
       model: "gpt-4-vision-preview",
@@ -32,28 +35,36 @@ serve(async (req) => {
           role: "system",
           content: `You are a nutrition expert analyzing food images. Your task is to:
 1. Identify the food items in the image
-2. Provide nutritional estimates for a single serving
+2. Provide realistic nutritional estimates for a single serving
 3. Return ONLY a JSON object with these exact fields:
-   - name: Brief description of the food
+   - name: Brief description of the food (string)
    - calories: Total calories (number between 50-1000)
    - protein: Grams of protein (number between 0-100)
    - carbs: Grams of carbohydrates (number between 0-200)
    - fats: Grams of fat (number between 0-100)
-Round all numbers to one decimal place. Be conservative with estimates.`
+
+Round all numbers to one decimal place. Be conservative with estimates.
+IMPORTANT: Return ONLY the JSON object, no additional text or explanation.`
         },
         {
           role: "user",
           content: [
-            { type: "text", text: "What food is in this image? Provide nutritional information in JSON format." },
-            { type: "image_url", url: image }
+            { 
+              type: "text", 
+              text: "What food is in this image? Provide nutritional information in JSON format only."
+            },
+            {
+              type: "image_url",
+              url: image
+            }
           ]
         }
       ],
       max_tokens: 500,
-      temperature: 0.3, // Lower temperature for more consistent results
+      temperature: 0.3,
     });
 
-    console.log('Raw OpenAI response:', response.choices[0].message.content);
+    console.log('Received response from OpenAI:', response.choices[0].message.content);
 
     let nutritionData;
     try {
@@ -96,7 +107,7 @@ Round all numbers to one decimal place. Be conservative with estimates.`
         throw new Error('Fats out of reasonable range (0-100g)');
       }
 
-      console.log('Processed nutrition data:', nutritionData);
+      console.log('Successfully processed nutrition data:', nutritionData);
 
     } catch (e) {
       console.error('Error processing nutrition data:', e);
