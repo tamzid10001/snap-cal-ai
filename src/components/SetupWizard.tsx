@@ -20,6 +20,7 @@ export const SetupWizard = () => {
         navigate('/login');
         return;
       }
+      console.log('Current user:', user); // Added log
       setUser(user);
     };
     
@@ -29,8 +30,11 @@ export const SetupWizard = () => {
   const onSubmit = async (values: SetupFormValues) => {
     try {
       if (!user) {
+        console.error('No authenticated user found in onSubmit'); // Added log
         throw new Error('No authenticated user found');
       }
+
+      console.log('Submitting values:', values); // Added log
 
       const heightInCm = values.heightUnit === 'ft' && values.heightFeet && values.heightInches 
         ? Math.round((values.heightFeet * 30.48) + (values.heightInches * 2.54))
@@ -40,6 +44,9 @@ export const SetupWizard = () => {
         ...values,
         height: heightInCm
       });
+
+      console.log('Calculated goals:', goals); // Added log
+      console.log('Updating profile for user:', user.id); // Added log
 
       const { error: updateError } = await supabase
         .from('profiles')
@@ -56,7 +63,7 @@ export const SetupWizard = () => {
         .eq('id', user.id);
 
       if (updateError) {
-        console.error('Supabase update error:', updateError);
+        console.error('Detailed Supabase update error:', updateError); // Enhanced error log
         throw updateError;
       }
 
@@ -67,7 +74,7 @@ export const SetupWizard = () => {
       
       navigate('/');
     } catch (error) {
-      console.error('Setup error:', error);
+      console.error('Detailed setup error:', error); // Enhanced error log
       toast({
         title: "Error",
         description: "Failed to save your preferences. Please try again.",
