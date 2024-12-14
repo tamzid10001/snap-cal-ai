@@ -1,5 +1,6 @@
-import OpenAI from 'openai';
-import { serve } from 'https://deno.fresh.runtime.dev/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import { serve } from "https://deno.fresh.runtime.dev/server.ts"
+import OpenAI from 'https://esm.sh/openai@4.28.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,7 +21,7 @@ serve(async (req) => {
     const { image } = await req.json();
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4-vision-preview",
+      model: "gpt-4o",
       messages: [
         {
           role: "user",
