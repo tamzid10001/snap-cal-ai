@@ -6,6 +6,7 @@ import { ImageUpload } from './ImageUpload';
 import { useNutrition } from '@/context/NutritionContext';
 import { useToast } from '@/hooks/use-toast';
 import { analyzeImage } from '@/utils/nutritionApi';
+import { supabase } from '@/integrations/supabase/client';
 
 export const MealEntry = () => {
   const { addMeal } = useNutrition();
@@ -15,11 +16,45 @@ export const MealEntry = () => {
   const handleImageAnalysis = async (file: File) => {
     setIsProcessing(true);
     try {
+      // First upload the image to Supabase storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('meal-images')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        throw new Error('Failed to upload image');
+      }
+
+      // Get the public URL for the uploaded image
+      const { data: { publicUrl } } = supabase.storage
+        .from('meal-images')
+        .getPublicUrl(fileName);
+
+      // Analyze the image using our edge function
       const analysis = await analyzeImage(file);
       
+      // Save the meal to Supabase
+      const { data: mealData, error: mealError } = await supabase
+        .from('meals')
+        .insert([
+          {
+            ...analysis,
+            image_url: publicUrl,
+          }
+        ])
+        .select()
+        .single();
+
+      if (mealError) {
+        throw mealError;
+      }
+
+      // Update local state
       addMeal({
         ...analysis,
-        imageUrl: URL.createObjectURL(file),
+        imageUrl: publicUrl,
       });
 
       toast({
@@ -27,6 +62,7 @@ export const MealEntry = () => {
         description: `Estimated calories: ${analysis.calories}kcal`,
       });
     } catch (error) {
+      console.error('Error:', error);
       toast({
         title: 'Error analyzing meal',
         description: 'Please try again or enter manually',
@@ -37,19 +73,38 @@ export const MealEntry = () => {
     }
   };
 
-  const handleManualEntry = () => {
-    addMeal({
+  const handleManualEntry = async () => {
+    const manualMeal = {
       name: 'Manual Entry',
       calories: 350,
       protein: 20,
       carbs: 30,
       fats: 15,
-    });
+    };
 
-    toast({
-      title: 'Meal logged successfully!',
-      description: 'Manual entry added to your log',
-    });
+    try {
+      const { data, error } = await supabase
+        .from('meals')
+        .insert([manualMeal])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      addMeal(manualMeal);
+
+      toast({
+        title: 'Meal logged successfully!',
+        description: 'Manual entry added to your log',
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: 'Error adding meal',
+        description: 'Please try again',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
