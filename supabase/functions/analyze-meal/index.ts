@@ -33,25 +33,25 @@ serve(async (req) => {
       messages: [
         {
           role: "system",
-          content: `You are a nutrition expert analyzing food images. Your task is to:
-1. Identify the food items in the image
-2. Provide realistic nutritional estimates for a single serving
-3. Return ONLY a JSON object with these exact fields:
-   - name: Brief description of the food (string)
+          content: `You are a nutrition expert analyzing food photos. Your task is to:
+1. Identify the exact food items in the image with specific details (e.g., "Grilled chicken breast with steamed broccoli" instead of just "Chicken and vegetables")
+2. Provide realistic nutritional estimates for the portion shown
+3. Return ONLY a JSON object with these fields:
+   - name: Detailed description of the food (string)
    - calories: Total calories (number between 50-1000)
    - protein: Grams of protein (number between 0-100)
    - carbs: Grams of carbohydrates (number between 0-200)
    - fats: Grams of fat (number between 0-100)
 
 Round all numbers to one decimal place. Be conservative with estimates.
-IMPORTANT: Return ONLY the JSON object, no additional text or explanation.`
+IMPORTANT: Return ONLY the JSON object, no additional text.`
         },
         {
           role: "user",
           content: [
             { 
               type: "text", 
-              text: "What food is in this image? Provide nutritional information in JSON format only."
+              text: "What food is shown in this image? Provide detailed nutritional information in JSON format only."
             },
             {
               type: "image_url",
@@ -69,7 +69,7 @@ IMPORTANT: Return ONLY the JSON object, no additional text or explanation.`
     let nutritionData;
     try {
       const content = response.choices[0].message.content.trim();
-      // Try to extract JSON if it's wrapped in text
+      // Extract JSON if it's wrapped in text
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       const jsonString = jsonMatch ? jsonMatch[0] : content;
       
