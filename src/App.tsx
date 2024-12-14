@@ -11,11 +11,13 @@ import Index from "./pages/Index";
 import { SetupWizard } from "./components/SetupWizard";
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
+import { useToast } from "./components/ui/use-toast";
 
 const queryClient = new QueryClient();
 
 const LoginPage = () => {
   const [session, setSession] = useState<Session | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -25,11 +27,23 @@ const LoginPage = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (_event === 'SIGNED_IN') {
+        toast({
+          title: "Success",
+          description: "Successfully signed in!",
+        });
+      }
+      if (_event === 'SIGNED_OUT') {
+        toast({
+          title: "Signed out",
+          description: "Successfully signed out.",
+        });
+      }
       setSession(session);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [toast]);
 
   if (session) {
     return <Navigate to="/" replace />;
@@ -71,8 +85,15 @@ const LoginPage = () => {
             localization={{
               variables: {
                 sign_in: {
-                  email_label: 'Email Address & Password'
-                }
+                  email_label: 'Email Address',
+                  password_label: 'Password',
+                  button_label: 'Sign In',
+                },
+                sign_up: {
+                  email_label: 'Email Address',
+                  password_label: 'Create Password',
+                  button_label: 'Create Account',
+                },
               }
             }}
             providers={[]}
