@@ -56,13 +56,26 @@ const LoginPage = () => {
                   },
                 },
               },
-              dictionary: {
-                providers: {
-                  email: {
-                    confirmation: {
-                      email_sent: "Check your email for the Confirmation Link!"
-                    }
-                  }
+              style: {
+                button: {
+                  borderRadius: '6px',
+                },
+                anchor: {
+                  color: '#000000',
+                },
+                container: {
+                  gap: '16px',
+                },
+              },
+              className: {
+                container: 'auth-container',
+                button: 'auth-button',
+                label: 'auth-label',
+                input: 'auth-input',
+              },
+              extend: {
+                headings: {
+                  signin: 'Email Address & Password'
                 }
               }
             }}
