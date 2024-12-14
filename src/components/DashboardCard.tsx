@@ -14,8 +14,8 @@ export const DashboardCard = ({ title, value, max, unit = '', className = '' }: 
   const progress = (Number(value) / max) * 100;
 
   return (
-    <Card className={`p-6 animate-fade-up ${className}`}>
-      <h3 className="text-sm font-medium text-gray-500">{title}</h3>
+    <Card className={`p-6 animate-fade-up bg-card hover:bg-accent/5 transition-colors ${className}`}>
+      <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
       <p className="text-2xl font-semibold mt-2 text-primary">
         {value}
         {unit}
@@ -23,7 +23,7 @@ export const DashboardCard = ({ title, value, max, unit = '', className = '' }: 
       <div className="mt-4">
         <Progress value={progress} className="h-2" />
       </div>
-      <p className="text-sm text-gray-400 mt-2">
+      <p className="text-sm text-muted-foreground mt-2">
         of {max}
         {unit} goal
       </p>
