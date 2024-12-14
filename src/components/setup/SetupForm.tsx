@@ -40,42 +40,46 @@ export const SetupForm = ({ onSubmit }: SetupFormProps) => {
   const form = useForm<SetupFormValues>({
     resolver: zodResolver(setupFormSchema),
     defaultValues: {
-      age: 25,
-      weight: 70,
+      age: undefined,
+      weight: undefined,
       height: 170,
       heightUnit: "cm",
+      heightFeet: 5,
+      heightInches: 7,
       gender: "male",
       activityLevel: "moderate",
       goal: "maintain",
     },
   });
 
-  // Watch for changes in height unit and feet/inches
   const heightUnit = form.watch("heightUnit");
   const heightFeet = form.watch("heightFeet");
   const heightInches = form.watch("heightInches");
   const heightCm = form.watch("height");
 
-  // Update height when feet/inches change
   useEffect(() => {
     if (heightUnit === "ft" && heightFeet && heightInches !== undefined) {
       const cm = convertFeetInchesToCm(heightFeet, heightInches);
       form.setValue("height", cm, { shouldValidate: true });
     }
-  }, [heightUnit, heightFeet, heightInches]);
+  }, [heightUnit, heightFeet, heightInches, form]);
 
-  // Update feet/inches when cm changes and unit is ft
   useEffect(() => {
     if (heightUnit === "ft" && heightCm) {
       const { feet, inches } = convertCmToFeetInches(heightCm);
       form.setValue("heightFeet", feet, { shouldValidate: true });
       form.setValue("heightInches", inches, { shouldValidate: true });
     }
-  }, [heightUnit, heightCm]);
+  }, [heightUnit, heightCm, form]);
+
+  const handleSubmit = async (values: SetupFormValues) => {
+    console.log('Form values before submission:', values);
+    onSubmit(values);
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
@@ -181,29 +185,27 @@ export const SetupForm = ({ onSubmit }: SetupFormProps) => {
           </div>
         )}
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="gender"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Gender</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="gender"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Gender</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}
