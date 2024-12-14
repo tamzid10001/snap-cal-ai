@@ -5,34 +5,73 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { calculateBMR } from "./utils";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useEffect } from "react";
 import type { SetupFormValues } from "./types";
 
 const setupFormSchema = z.object({
-  age: z.string().transform(Number).pipe(z.number().min(1).max(120)),
-  weight: z.string().transform(Number).pipe(z.number().min(20).max(300)),
-  height: z.string().transform(Number).pipe(z.number().min(100).max(250)),
+  age: z.coerce.number().min(1).max(120),
+  weight: z.coerce.number().min(20).max(300),
+  height: z.coerce.number().min(100).max(250),
+  heightUnit: z.enum(["cm", "ft"]),
+  heightFeet: z.coerce.number().min(4).max(8).optional(),
+  heightInches: z.coerce.number().min(0).max(11).optional(),
   gender: z.enum(["male", "female"]),
   activityLevel: z.enum(["sedentary", "light", "moderate", "very", "extra"]),
   goal: z.enum(["lose", "maintain", "gain"]),
 });
 
 interface SetupFormProps {
-  onSubmit: (values: z.infer<typeof setupFormSchema>) => void;
+  onSubmit: (values: SetupFormValues) => void;
 }
+
+const convertFeetInchesToCm = (feet: number, inches: number): number => {
+  return Math.round((feet * 30.48) + (inches * 2.54));
+};
+
+const convertCmToFeetInches = (cm: number): { feet: number; inches: number } => {
+  const totalInches = cm / 2.54;
+  const feet = Math.floor(totalInches / 12);
+  const inches = Math.round(totalInches % 12);
+  return { feet, inches };
+};
 
 export const SetupForm = ({ onSubmit }: SetupFormProps) => {
   const form = useForm<SetupFormValues>({
     resolver: zodResolver(setupFormSchema),
     defaultValues: {
-      age: "",
-      weight: "",
-      height: "",
+      age: 25,
+      weight: 70,
+      height: 170,
+      heightUnit: "cm",
       gender: "male",
       activityLevel: "moderate",
       goal: "maintain",
     },
   });
+
+  // Watch for changes in height unit and feet/inches
+  const heightUnit = form.watch("heightUnit");
+  const heightFeet = form.watch("heightFeet");
+  const heightInches = form.watch("heightInches");
+  const heightCm = form.watch("height");
+
+  // Update height when feet/inches change
+  useEffect(() => {
+    if (heightUnit === "ft" && heightFeet && heightInches !== undefined) {
+      const cm = convertFeetInchesToCm(heightFeet, heightInches);
+      form.setValue("height", cm, { shouldValidate: true });
+    }
+  }, [heightUnit, heightFeet, heightInches]);
+
+  // Update feet/inches when cm changes and unit is ft
+  useEffect(() => {
+    if (heightUnit === "ft" && heightCm) {
+      const { feet, inches } = convertCmToFeetInches(heightCm);
+      form.setValue("heightFeet", feet, { shouldValidate: true });
+      form.setValue("heightInches", inches, { shouldValidate: true });
+    }
+  }, [heightUnit, heightCm]);
 
   return (
     <Form {...form}>
@@ -67,7 +106,37 @@ export const SetupForm = ({ onSubmit }: SetupFormProps) => {
           />
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <FormField
+          control={form.control}
+          name="heightUnit"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Height Unit</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  className="flex space-x-4"
+                >
+                  <FormItem className="flex items-center space-x-2">
+                    <FormControl>
+                      <RadioGroupItem value="cm" />
+                    </FormControl>
+                    <FormLabel className="font-normal">Centimeters</FormLabel>
+                  </FormItem>
+                  <FormItem className="flex items-center space-x-2">
+                    <FormControl>
+                      <RadioGroupItem value="ft" />
+                    </FormControl>
+                    <FormLabel className="font-normal">Feet & Inches</FormLabel>
+                  </FormItem>
+                </RadioGroup>
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        {heightUnit === "cm" ? (
           <FormField
             control={form.control}
             name="height"
@@ -81,7 +150,38 @@ export const SetupForm = ({ onSubmit }: SetupFormProps) => {
               </FormItem>
             )}
           />
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="heightFeet"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Feet</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="Feet" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="heightInches"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Inches</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="Inches" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        )}
 
+        <div className="grid gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
             name="gender"
